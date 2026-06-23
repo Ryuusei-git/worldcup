@@ -995,6 +995,16 @@ tr.rank-3 td:last-child strong {
     width: calc(100% - 28px);
   }
 
+  .group-card,
+  .wide-table {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .group-card table,
+  .group-focus .wide-table table {
+    min-width: 640px;
+  }
+
   .hero-actions {
     align-items: stretch;
     flex-direction: column;
