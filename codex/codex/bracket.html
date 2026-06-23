@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>トーナメント表 | 2026年ワールドカップ速報ボード</title>
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body data-page="bracket">
+    <header class="site-header">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">26</span>
+        <span>W杯速報ボード</span>
+      </a>
+      <nav class="nav" aria-label="メインナビゲーション">
+        <a href="index.html">ホーム</a>
+        <a href="standings.html">順位表</a>
+        <a aria-current="page" href="bracket.html">トーナメント</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="page-title">
+        <p class="eyebrow">決勝トーナメント</p>
+        <h1>現状のトーナメント表</h1>
+        <p>
+          2026年大会は3位通過の組み合わせが確定後に対戦枠が決まるため、
+          現時点の3位突破圏8組だった場合のラウンド32を暫定表示します。
+        </p>
+      </section>
+
+      <section class="bracket-board" aria-live="polite">
+        <div class="bracket-stage">
+          <h2>ラウンド32</h2>
+          <div id="round32" class="bracket-tree"></div>
+        </div>
+        <div class="bracket-stage">
+          <h2>ラウンド16</h2>
+          <div id="round16" class="bracket-next"></div>
+        </div>
+        <div class="bracket-stage">
+          <h2>準々決勝</h2>
+          <div id="quarterfinals" class="bracket-next"></div>
+        </div>
+        <div class="bracket-stage">
+          <h2>準決勝</h2>
+          <div id="semifinals" class="bracket-next"></div>
+        </div>
+        <div class="bracket-stage">
+          <h2>決勝</h2>
+          <div id="final" class="bracket-next"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading">
+          <p class="eyebrow">突破圏</p>
+          <h2>現在の出場候補</h2>
+        </div>
+        <div id="qualifiedBracket" class="qualified-grid"></div>
+      </section>
+    </main>
+
+    <script src="data/app.js"></script>
+  </body>
+</html>
