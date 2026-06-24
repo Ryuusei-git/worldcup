@@ -3,6 +3,7 @@ const API = {
   dates: "20260611-20260719",
 };
 
+const FETCH_TIMEOUT_MS = 15_000;
 const GROUPS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 const BRACKET_GRID_ROWS = 64;
 const BRACKET_MATCH_ROW_SPAN = 4;
@@ -5015,6 +5016,12 @@ const FUTURE_ROUNDS = [
       { match: 104, sources: [101, 102] },
     ],
   },
+  {
+    id: "thirdPlace",
+    matches: [
+      { match: 103, sources: [101, 102], sourceLabel: "敗者" },
+    ],
+  },
 ];
 
 const GROUP_TEAMS = {
@@ -5196,8 +5203,13 @@ let state = {
   events: [],
   standings: createEmptyStandings(),
   lastUpdated: null,
+  loading: true,
   error: null,
 };
+
+let refreshTimer = null;
+let activeRequestController = null;
+let activeRequestId = 0;
 
 function createEmptyStandings() {
   return Object.fromEntries(
@@ -5329,26 +5341,54 @@ function calculateStandings(events) {
   return table;
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
+async function fetchJson(url, controller) {
+  const timeout = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(url, { cache: "no-store", signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("取得タイムアウト");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
 }
 
 async function loadData() {
+  if (state.loading && activeRequestController) {
+    activeRequestController.abort();
+  }
+
+  activeRequestController = new AbortController();
+  const requestId = activeRequestId + 1;
+  activeRequestId = requestId;
+  state.loading = true;
+  state.error = null;
+  renderStatus();
+
   try {
     const url = `${API.scoreboard}?limit=260&dates=${API.dates}`;
-    const data = await fetchJson(url);
+    const data = await fetchJson(url, activeRequestController);
+
+    if (requestId !== activeRequestId) return;
 
     state.events = data.events || [];
     state.standings = calculateStandings(state.events);
     state.lastUpdated = new Date();
     state.error = null;
   } catch (error) {
-    state.error = error;
+    if (requestId !== activeRequestId) return;
+    if (error.name !== "AbortError") state.error = error;
+  } finally {
+    if (requestId !== activeRequestId) return;
+    state.loading = false;
+    activeRequestController = null;
+    render();
   }
-
-  render();
 }
 
 function formatDateTime(date) {
@@ -5377,13 +5417,13 @@ function getTokyoDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function getTomorrowTokyoDate() {
+function getTokyoDateOffset(offsetDays = 0) {
   const { year, month, day } = getTokyoDateParts(new Date());
-  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + 1));
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + offsetDays));
 }
 
-function getTomorrowTokyoKey() {
-  const date = getTomorrowTokyoDate();
+function getTokyoDateOffsetKey(offsetDays = 0) {
+  const date = getTokyoDateOffset(offsetDays);
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
@@ -5501,12 +5541,18 @@ function renderTomorrowSchedule() {
   const label = document.querySelector("#tomorrowDateLabel");
   if (!target) return;
 
-  const tomorrowDate = getTomorrowTokyoDate();
-  const tomorrowKey = getTomorrowTokyoKey();
-  if (label) label.textContent = `${formatTokyoDateLabel(tomorrowDate)} 開催分`;
+  const startDate = getTokyoDateOffset(0);
+  const endDate = getTokyoDateOffset(7);
+  const startKey = getTokyoDateOffsetKey(0);
+  const endKey = getTokyoDateOffsetKey(7);
+  if (label) label.textContent = `${formatTokyoDateLabel(startDate)} - ${formatTokyoDateLabel(endDate)} 開催分`;
 
   const matches = state.events
-    .filter((event) => event.date && getTokyoDateKey(new Date(event.date)) === tomorrowKey)
+    .filter((event) => {
+      if (!event.date) return false;
+      const eventKey = getTokyoDateKey(new Date(event.date));
+      return eventKey >= startKey && eventKey <= endKey;
+    })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   if (state.error) {
@@ -5515,27 +5561,45 @@ function renderTomorrowSchedule() {
   }
 
   if (!matches.length) {
-    target.innerHTML = `<p class="empty-state">明日の試合予定はありません。</p>`;
+    target.innerHTML = `<p class="empty-state">今後1週間の試合予定はありません。</p>`;
     return;
   }
 
-  target.innerHTML = matches.map((event) => {
-    const competition = event.competitions?.[0] || {};
-    const group = getEventGroup(event);
-    const teams = getEventTeams(event);
-    const home = teamNameJa(teams[0] || "未定");
-    const away = teamNameJa(teams[1] || "未定");
-    const note = formatGroupNote(competition.altGameNote || event.season?.slug || "");
-    const venue = competition.venue?.fullName || "";
-    const href = group ? `standings.html?group=${group}#groupFocus` : "standings.html";
+  const matchesByDate = matches.reduce((groups, event) => {
+    const dateKey = getTokyoDateKey(new Date(event.date));
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(event);
+    return groups;
+  }, {});
 
-    return `<a class="schedule-card" href="${href}" aria-label="グループ${group || ""}の順位表と試合予定を見る">
-      <time datetime="${event.date}">${formatTokyoTime(new Date(event.date))}</time>
-      <div class="schedule-match">
-        <strong>${home}<span>vs</span>${away}</strong>
-        <small>${note}${venue ? ` / ${venue}` : ""}</small>
-      </div>
-    </a>`;
+  target.innerHTML = Object.entries(matchesByDate).map(([dateKey, dateMatches], index) => {
+    const date = new Date(`${dateKey}T00:00:00Z`);
+    const cards = dateMatches.map((event) => {
+      const competition = event.competitions?.[0] || {};
+      const group = getEventGroup(event);
+      const teams = getEventTeams(event);
+      const home = teamNameJa(teams[0] || "未定");
+      const away = teamNameJa(teams[1] || "未定");
+      const note = formatGroupNote(competition.altGameNote || event.season?.slug || "");
+      const venue = competition.venue?.fullName || "";
+      const href = group ? `standings.html?group=${group}#groupFocus` : "standings.html";
+
+      return `<a class="schedule-card" href="${href}" aria-label="グループ${group || ""}の順位表と試合予定を見る">
+        <time datetime="${event.date}">${formatTokyoTime(new Date(event.date))}</time>
+        <div class="schedule-match">
+          <strong>${home}<span>vs</span>${away}</strong>
+          <small>${note}${venue ? ` / ${venue}` : ""}</small>
+        </div>
+      </a>`;
+    }).join("");
+
+    return `<details class="schedule-day" ${index === 0 ? "open" : ""}>
+      <summary>
+        <span>${formatTokyoDateLabel(date)}</span>
+        <small>${dateMatches.length}試合</small>
+      </summary>
+      <div class="schedule-day-list">${cards}</div>
+    </details>`;
   }).join("");
 }
 
@@ -5546,9 +5610,24 @@ function renderStatus() {
 
   if (!dot || !updated || !source) return;
 
-  dot.className = `status-dot ${state.error ? "error" : "ok"}`;
-  updated.textContent = state.error ? "取得エラー" : formatDateTime(state.lastUpdated);
-  source.textContent = state.error ? String(state.error.message || state.error) : "ESPNスコアボード / 60秒更新";
+  dot.className = `status-dot ${state.error ? "error" : state.loading ? "loading" : "ok"}`;
+
+  if (state.loading && !state.lastUpdated) {
+    updated.textContent = "取得中";
+    source.textContent = "ESPNスコアボードへ接続中";
+    return;
+  }
+
+  if (state.error) {
+    updated.textContent = state.lastUpdated ? formatDateTime(state.lastUpdated) : "取得エラー";
+    source.textContent = String(state.error.message || state.error);
+    return;
+  }
+
+  updated.textContent = formatDateTime(state.lastUpdated);
+  source.textContent = state.events.length
+    ? "ESPNスコアボード / 60秒更新"
+    : "ESPNスコアボード / 試合データなし";
 }
 
 function renderQualifiedPreview() {
@@ -5723,9 +5802,10 @@ function renderBracket() {
 
     const rowGap = BRACKET_GRID_ROWS / round.matches.length;
     target.innerHTML = round.matches.map((match, index) => {
+      const sourceLabel = match.sourceLabel || "勝者";
       const body = match.sources.map((source) => (
         `<div class="bracket-team">
-          <span>勝者</span>
+          <span>${sourceLabel}</span>
           <strong>Match ${source}</strong>
         </div>`
       )).join("");
@@ -5744,15 +5824,48 @@ function renderBracket() {
 
 function render() {
   renderStatus();
-  renderTomorrowSchedule();
-  renderGroupFocus();
-  renderQualifiedPreview();
-  renderThirdPreview();
-  renderStandings();
-  renderThirdTable();
-  renderBracket();
+
+  if (page === "home") {
+    renderTomorrowSchedule();
+    renderQualifiedPreview();
+    renderThirdPreview();
+    return;
+  }
+
+  if (page === "standings") {
+    renderGroupFocus();
+    renderStandings();
+    renderThirdTable();
+    return;
+  }
+
+  if (page === "bracket") {
+    renderBracket();
+  }
 }
 
 render();
 loadData();
-window.setInterval(loadData, 60_000);
+
+function startAutoRefresh() {
+  if (refreshTimer) return;
+  refreshTimer = window.setInterval(loadData, 60_000);
+}
+
+function stopAutoRefresh() {
+  if (!refreshTimer) return;
+  window.clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopAutoRefresh();
+    return;
+  }
+
+  loadData();
+  startAutoRefresh();
+});
+
+startAutoRefresh();

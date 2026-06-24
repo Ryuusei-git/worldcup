@@ -608,6 +608,7 @@ tr.rank-3 td:last-child strong {
     minmax(230px, 1fr)
     minmax(220px, 0.92fr)
     minmax(210px, 0.86fr)
+    minmax(210px, 0.86fr)
     minmax(210px, 0.86fr);
   gap: clamp(18px, 3vw, 38px);
   overflow-x: auto;
@@ -689,6 +690,13 @@ tr.rank-3 td:last-child strong {
 
 #final .bracket-match::after {
   content: none;
+}
+
+.bracket-third-place .bracket-match {
+  background:
+    linear-gradient(90deg, rgba(183, 121, 31, 0.12), transparent 26px),
+    var(--panel);
+  border-left-color: var(--warn);
 }
 
 .bracket-match small,
@@ -874,8 +882,64 @@ tr.rank-3 td:last-child strong {
 
 .schedule-list {
   display: grid;
-  gap: 12px;
+  gap: 18px;
   padding-bottom: 54px;
+}
+
+.schedule-day {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-day summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 950;
+  list-style: none;
+}
+
+.schedule-day summary::-webkit-details-marker {
+  display: none;
+}
+
+.schedule-day summary::after {
+  content: "+";
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #ffffff;
+  background: var(--accent);
+  border-radius: 999px;
+  font-weight: 950;
+}
+
+.schedule-day[open] summary::after {
+  content: "-";
+}
+
+.schedule-day summary small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.schedule-day-list {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
 }
 
 .schedule-card {
@@ -915,6 +979,11 @@ tr.rank-3 td:last-child strong {
   border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 950;
+}
+
+.schedule-card time span {
+  font-size: 0.72rem;
+  line-height: 1.1;
 }
 
 .schedule-match {
@@ -972,6 +1041,7 @@ tr.rank-3 td:last-child strong {
       minmax(230px, 1fr)
       minmax(210px, 1fr)
       minmax(200px, 1fr)
+      minmax(200px, 1fr)
       minmax(200px, 1fr);
   }
 
@@ -1001,6 +1071,7 @@ tr.rank-3 td:last-child strong {
   }
 
   .group-card table,
+  #thirdPlaceTable table,
   .group-focus .wide-table table {
     min-width: 640px;
   }
