@@ -630,7 +630,7 @@ tr.rank-3 td:last-child strong {
 .bracket-next {
   position: relative;
   display: grid;
-  grid-template-rows: repeat(64, 42px);
+  grid-template-rows: repeat(128, 42px);
 }
 
 .bracket-match {
@@ -705,6 +705,14 @@ tr.rank-3 td:last-child strong {
   margin-bottom: 8px;
   color: var(--muted);
   font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.bracket-match time {
+  display: block;
+  margin: -2px 0 8px;
+  color: var(--ink);
+  font-size: 0.84rem;
   font-weight: 900;
 }
 

@@ -5,14 +5,49 @@ const API = {
 
 const FETCH_TIMEOUT_MS = 15_000;
 const GROUPS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-const BRACKET_GRID_ROWS = 64;
-const BRACKET_MATCH_ROW_SPAN = 4;
+const BRACKET_GRID_ROWS = 128;
+const BRACKET_MATCH_ROW_SPAN = 8;
+
+const KNOCKOUT_MATCH_DATES = {
+  73: "2026-06-28T12:00:00-07:00",
+  74: "2026-06-29T16:30:00-04:00",
+  75: "2026-06-29T19:00:00-06:00",
+  76: "2026-06-29T12:00:00-05:00",
+  77: "2026-06-30T17:00:00-04:00",
+  78: "2026-06-30T12:00:00-05:00",
+  79: "2026-06-30T19:00:00-06:00",
+  80: "2026-07-01T12:00:00-04:00",
+  81: "2026-07-01T17:00:00-07:00",
+  82: "2026-07-01T13:00:00-07:00",
+  83: "2026-07-02T19:00:00-04:00",
+  84: "2026-07-02T12:00:00-07:00",
+  85: "2026-07-02T20:00:00-07:00",
+  86: "2026-07-03T18:00:00-04:00",
+  87: "2026-07-03T20:30:00-05:00",
+  88: "2026-07-03T13:00:00-05:00",
+  89: "2026-07-04T17:00:00-04:00",
+  90: "2026-07-04T12:00:00-05:00",
+  91: "2026-07-05T16:00:00-04:00",
+  92: "2026-07-05T18:00:00-06:00",
+  93: "2026-07-06T14:00:00-05:00",
+  94: "2026-07-06T17:00:00-07:00",
+  95: "2026-07-07T12:00:00-04:00",
+  96: "2026-07-07T13:00:00-07:00",
+  97: "2026-07-09T16:00:00-04:00",
+  98: "2026-07-10T12:00:00-07:00",
+  99: "2026-07-11T17:00:00-04:00",
+  100: "2026-07-11T20:00:00-05:00",
+  101: "2026-07-14T14:00:00-05:00",
+  102: "2026-07-15T15:00:00-04:00",
+  103: "2026-07-18T17:00:00-04:00",
+  104: "2026-07-19T15:00:00-04:00",
+};
 
 const ROUND32_MATCHES = [
-  { match: 73, next: 89, slots: [{ type: "runner", group: "A" }, { type: "runner", group: "B" }] },
-  { match: 75, next: 89, slots: [{ type: "winner", group: "F" }, { type: "runner", group: "C" }] },
-  { match: 74, next: 90, slots: [{ type: "winner", group: "E" }, { type: "third", groups: ["A", "B", "C", "D", "F"] }] },
-  { match: 77, next: 90, slots: [{ type: "winner", group: "I" }, { type: "third", groups: ["C", "D", "F", "G", "H"] }] },
+  { match: 73, next: 90, slots: [{ type: "runner", group: "A" }, { type: "runner", group: "B" }] },
+  { match: 75, next: 90, slots: [{ type: "winner", group: "F" }, { type: "runner", group: "C" }] },
+  { match: 74, next: 89, slots: [{ type: "winner", group: "E" }, { type: "third", groups: ["A", "B", "C", "D", "F"] }] },
+  { match: 77, next: 89, slots: [{ type: "winner", group: "I" }, { type: "third", groups: ["C", "D", "F", "G", "H"] }] },
   { match: 83, next: 93, slots: [{ type: "runner", group: "K" }, { type: "runner", group: "L" }] },
   { match: 84, next: 93, slots: [{ type: "winner", group: "H" }, { type: "runner", group: "J" }] },
   { match: 81, next: 94, slots: [{ type: "winner", group: "D" }, { type: "third", groups: ["B", "E", "F", "I", "J"] }] },
@@ -4984,8 +5019,8 @@ const FUTURE_ROUNDS = [
   {
     id: "round16",
     matches: [
-      { match: 89, sources: [73, 75] },
-      { match: 90, sources: [74, 77] },
+      { match: 90, sources: [73, 75] },
+      { match: 89, sources: [74, 77] },
       { match: 93, sources: [83, 84] },
       { match: 94, sources: [81, 82] },
       { match: 91, sources: [76, 78] },
@@ -5447,6 +5482,21 @@ function formatTokyoTime(date) {
   }).format(date);
 }
 
+function formatTokyoKickoff(date) {
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return `${values.month}月${values.day}日（${values.weekday}）${values.hour}:${values.minute}`;
+}
+
 function getQualified() {
   const direct = [];
   const thirds = [];
@@ -5500,9 +5550,28 @@ function seedDisplayName(slot, standings, thirdAssignments, matchNumber = null) 
   return `${name.group}3 ${teamNameJa(name.name)}`;
 }
 
+function getBracketMatchDate(match) {
+  const event = state.events.find((item) => {
+    const text = [
+      item.name,
+      item.shortName,
+      item.competitions?.[0]?.notes?.[0]?.headline,
+      item.competitions?.[0]?.altGameNote,
+    ].filter(Boolean).join(" ");
+
+    return new RegExp(`\\bMatch\\s+${match}\\b`, "i").test(text);
+  });
+
+  return event?.date || KNOCKOUT_MATCH_DATES[match] || null;
+}
+
 function matchCardHtml(match, rowStart, body) {
+  const matchDate = getBracketMatchDate(match);
+  const kickoff = matchDate ? formatTokyoKickoff(new Date(matchDate)) : "";
+
   return `<article class="bracket-match" style="grid-row: ${rowStart} / span ${BRACKET_MATCH_ROW_SPAN}">
     <small>Match ${match}</small>
+    ${kickoff ? `<time datetime="${matchDate}">${kickoff}</time>` : ""}
     ${body}
   </article>`;
 }
