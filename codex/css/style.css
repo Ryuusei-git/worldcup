@@ -601,17 +601,19 @@ tr.rank-3 td:last-child strong {
 }
 
 .bracket-board {
+  --bracket-gap: clamp(18px, 2.2vw, 28px);
+  --connector: calc(var(--bracket-gap) + 2px);
   display: grid;
   grid-template-columns:
-    minmax(260px, 1.18fr)
-    minmax(230px, 1fr)
-    minmax(220px, 0.92fr)
-    minmax(210px, 0.86fr)
-    minmax(210px, 0.86fr)
-    minmax(210px, 0.86fr);
-  gap: clamp(18px, 3vw, 38px);
+    minmax(220px, 1fr)
+    minmax(190px, 0.88fr)
+    minmax(180px, 0.82fr)
+    minmax(172px, 0.78fr)
+    minmax(172px, 0.78fr)
+    minmax(172px, 0.78fr);
+  gap: var(--bracket-gap);
   overflow-x: auto;
-  padding: 4px 8px 54px;
+  padding: 4px calc(var(--connector) + 2px) 54px 8px;
   scrollbar-color: var(--line-strong) transparent;
 }
 
@@ -629,14 +631,14 @@ tr.rank-3 td:last-child strong {
 .bracket-next {
   position: relative;
   display: grid;
-  grid-template-rows: repeat(128, 42px);
+  grid-template-rows: repeat(128, 24px);
 }
 
 .bracket-match {
   position: relative;
   align-self: center;
-  min-height: 132px;
-  padding: 12px;
+  min-height: 76px;
+  padding: 7px;
   background:
     linear-gradient(90deg, rgba(23, 105, 224, 0.08), transparent 26px),
     var(--panel);
@@ -660,8 +662,8 @@ tr.rank-3 td:last-child strong {
 .bracket-tree .bracket-match::after {
   position: absolute;
   top: 50%;
-  right: -28px;
-  width: 28px;
+  right: calc(var(--connector) * -1);
+  width: var(--connector);
   height: 1px;
   background: var(--muted);
   content: "";
@@ -670,8 +672,8 @@ tr.rank-3 td:last-child strong {
 .bracket-next .bracket-match::before {
   position: absolute;
   top: 50%;
-  left: -28px;
-  width: 28px;
+  left: calc(var(--connector) * -1);
+  width: var(--connector);
   height: 1px;
   background: var(--muted);
   content: "";
@@ -680,8 +682,8 @@ tr.rank-3 td:last-child strong {
 .bracket-next .bracket-match::after {
   position: absolute;
   top: 50%;
-  right: -28px;
-  width: 28px;
+  right: calc(var(--connector) * -1);
+  width: var(--connector);
   height: 1px;
   background: var(--muted);
   content: "";
@@ -701,7 +703,7 @@ tr.rank-3 td:last-child strong {
 .bracket-match small,
 .qualified-card small {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 3px;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;
@@ -709,18 +711,18 @@ tr.rank-3 td:last-child strong {
 
 .bracket-match time {
   display: block;
-  margin: -2px 0 8px;
+  margin: -2px 0 3px;
   color: var(--ink);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 900;
 }
 
 .bracket-team {
   display: grid;
-  grid-template-columns: 66px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 6px;
   align-items: center;
-  padding: 7px 8px;
+  padding: 3px 5px;
   border-top: 1px solid var(--line);
 }
 
@@ -742,12 +744,12 @@ tr.rank-3 td:last-child strong {
 
 .bracket-team span {
   display: inline-grid;
-  min-height: 24px;
+  min-height: 18px;
   place-items: center;
   color: var(--muted);
   background: #eef2f7;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 950;
 }
 
@@ -1044,12 +1046,12 @@ tr.rank-3 td:last-child strong {
 
   .bracket-board {
     grid-template-columns:
-      minmax(250px, 1fr)
-      minmax(230px, 1fr)
-      minmax(210px, 1fr)
-      minmax(200px, 1fr)
-      minmax(200px, 1fr)
-      minmax(200px, 1fr);
+      minmax(220px, 1fr)
+      minmax(190px, 0.88fr)
+      minmax(180px, 0.82fr)
+      minmax(172px, 0.78fr)
+      minmax(172px, 0.78fr)
+      minmax(172px, 0.78fr);
   }
 
   .qualified-grid {

@@ -5879,7 +5879,8 @@ function renderBracket() {
         </div>`
       )).join("");
 
-      return matchCardHtml(match.match, Math.floor(index * rowGap + rowGap / 2), body);
+      const rowStart = Math.floor(index * rowGap + rowGap / 2 - BRACKET_MATCH_ROW_SPAN / 2 + 1);
+      return matchCardHtml(match.match, rowStart, body);
     }).join("");
   });
 
